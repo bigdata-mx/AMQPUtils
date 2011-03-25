@@ -39,34 +39,34 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
 
   public ConnectionFactory createConnectionFactory() throws Exception {
     ConnectionFactory factory = new ConnectionFactory();
-    String username = conf.getString("cf.username");
+    String username = conf.getString("amqp_username");
     if (username != null) {
       factory.setUsername(username);
     }
-    String password = conf.getString("cf.password");
+    String password = conf.getString("amqp_password");
     if (password != null) {
       factory.setPassword(password);
     }
-    String virtualHost = conf.getString("cf.virtual_host");
+    String virtualHost = conf.getString("amqp_virtual_host");
     if ( virtualHost != null) {
       factory.setVirtualHost(virtualHost);
     }
-    String host = conf.getString("cf.host");
+    String host = conf.getString("amqp_host");
     if (host != null) {
       factory.setHost(host);
     }
-    Integer port = conf.getInteger("cf.port");
+    Integer port = conf.getInteger("amqp_port");
     if (port != null) {
       factory.setPort(port);
     }
     return factory;
   }
   
-  public Channel declareChannel(ConnectionFactory factory, 
-                                   String key) throws Exception {
+  public Channel declareChannel(ConnectionFactory factory, String key) 
+    throws Exception {
     Connection conn = factory.newConnection();
     Channel channel = conn.createChannel();
-    Integer basicQos = conf.getInteger("channel.basic_qos");
+    Integer basicQos = conf.getInteger("channel_basic_qos");
     if (basicQos != null) {
       channel.basicQos(basicQos);
     } else {
@@ -89,19 +89,19 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
     return getRoutingKey(null);
   }
   public String getRoutingKey(String key) {
-    String rk = conf.getString("queue.routing_key"
-                               + ((key != null) ? "." +  key : ""));
+    String rk = conf.getString("queue_routing_key"
+                               + ((key != null) ? "_" +  key : ""));
     return (rk != null) ? rk : DEFAULT_ROUTING_KEY; 
   }
 
   public String getExchangeName(String key) {
-    return conf.getString("exchange.name"
-                          + ((key != null) ? "." +  key : ""));
+    return conf.getString("exchange_name"
+                          + ((key != null) ? "_" +  key : ""));
   }
 
   public String getExchangeType(String key) {
-    return conf.getString("exchange.type" 
-                          + ((key != null) ? "." +  key : ""));
+    return conf.getString("exchange_type" 
+                          + ((key != null) ? "_" +  key : ""));
   }
 
   public QueueingConsumer createQueueingConsumer(Channel channel, 

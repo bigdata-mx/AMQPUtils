@@ -1,0 +1,26 @@
+                     AMQPUtils LICENSE INFORMATION
+
+March 25, 2011
+
+AMQPUtils software is licensed under the Apache License,
+Version 2.0. Other software included in this distribution is provided under 
+other licenses, as listed in the Included Software and Licenses section at 
+the bottom of this page. Source code for software included in this distribution
+is available from the AMQPUtils project or as otherwise 
+indicated at the bottom of this page. 
+
+===
+
+LICENSE INFORMATION REGARDING BUNDLED THIRD-PARTY SOFTWARE
+
+The following third party software is distributed with AMQPUtils
+software and is provided under other licenses and/or
+has source available from other locations.
+
+* AnyObject
+  License: Apache License, Version 2.0 
+  Source code availability: https://github.com/elmer-garduno/AnyObject/
+
+* RabbitMQ Java Client
+  License: Mozilla Public License v1.1
+  Source code availability: http://www.rabbitmq.com/java-client.html

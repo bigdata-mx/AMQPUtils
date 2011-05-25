@@ -85,6 +85,14 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
     return queue;
   }
 
+  public String createQueue(Channel channel, String key, Boolean nonExclusive)
+    throws Exception {
+    String queueName = getQueueName(key);
+    channel.queueDeclare(queueName, true, false, false, null);
+    channel.queueBind(queueName, getExchangeName(key), getRoutingKey(key));
+    return queueName;
+  }
+
   public String getRoutingKey() {
     return getRoutingKey(null);
   }
@@ -101,6 +109,11 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
 
   public String getExchangeType(String key) {
     return conf.getString("exchange_type" 
+                          + ((key != null) ? "_" +  key : ""));
+  }
+
+  public String getQueueName(String key) {
+    return conf.getString("queue_name"
                           + ((key != null) ? "_" +  key : ""));
   }
 

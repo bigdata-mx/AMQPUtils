@@ -31,7 +31,7 @@ public interface AMQPClientHelper {
 
   String createQueue(Channel channel, String key) throws Exception;  
 
-  String createQueue(Channel channel, String key, Boolean nonExclusive) 
+  String createQueue(Channel channel, String key, boolean nonExclusive) 
     throws Exception;  
 
   String getRoutingKey();  

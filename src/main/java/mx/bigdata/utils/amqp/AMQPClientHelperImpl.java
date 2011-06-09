@@ -88,7 +88,7 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
   public String createQueue(Channel channel, String key, boolean nonExclusive)
     throws Exception {
     String queueName = getQueueName(key);
-    channel.queueDeclare(queueName, true, false, false, null);
+    channel.queueDeclare(queueName, false, false, false, null);
     channel.queueBind(queueName, getExchangeName(key), getRoutingKey(key));
     return queueName;
   }

@@ -26,12 +26,18 @@ import com.rabbitmq.client.ShutdownSignalException;
 public interface AMQPClientHelper {  
   ConnectionFactory createConnectionFactory() throws Exception;  
 
+  ConnectionFactory createConnectionFactory(String key) throws Exception;  
+
   Channel declareChannel(ConnectionFactory factory, String key) 
     throws Exception;
 
   String createQueue(Channel channel, String key) throws Exception;  
 
+  @Deprecated
   String createQueue(Channel channel, String key, boolean nonExclusive) 
+    throws Exception;  
+
+  String createNamedQueue(Channel channel, String key) 
     throws Exception;  
 
   String getRoutingKey();  

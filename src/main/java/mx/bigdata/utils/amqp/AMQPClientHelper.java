@@ -37,9 +37,12 @@ public interface AMQPClientHelper {
   String createQueue(Channel channel, String key, boolean nonExclusive) 
     throws Exception;  
 
+  String createQueue(Channel channel, String key, boolean durable, 
+		     boolean exclusive, boolean autoDelete) throws Exception;  
+  
   String createNamedQueue(Channel channel, String key) 
     throws Exception;  
-
+  
   String getRoutingKey();  
 
   String getRoutingKey(String key);

@@ -16,7 +16,11 @@
 
 package mx.bigdata.utils.amqp;
 
-import java.util.concurrent.ExecutorService;
+//import java.util.concurrent.ExecutorService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Address;
@@ -67,92 +71,17 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
     if (port != null) {
       factory.setPort(port);
     }
-    Boolean notifyCancel = getBoolean("amqp_consumer_cancel_notify", key);
+    Boolean notifyCancel = 
+      getBooleanOrDefault("amqp_consumer_cancel_notify", key);
     if (notifyCancel != null && notifyCancel) {
-      Map<String,Object> properties = Maps.newHashMap();
-      Map<String,Object> capabilities = Maps.newHashMap();
+      Map<String, Object> properties = new HashMap<String, Object>();
+      Map<String, Object> capabilities = new HashMap<String, Object>();
       capabilities.put("consumer_cancel_notify", true);
       properties.put("capabilities", capabilities);
-      factory.setClientProperties(properties)
+      factory.setClientProperties(properties);
     }
     return factory;
   }
-
-  // public ConnectionFactory createDynamicConnectionFactory(String key) 
-  //   throws Exception {
-  //   throws new UnsupportedOperationException();
-  // }
-
-  // public final static class DynamicConnectionFactory extends ConnectionFactory {
-    
-  //   private final AnyObject conf;
-
-  //   DynamicConnectionFactory(AnyObject conf) {
-  //     super();
-  //     this.conf = conf;
-  //     this.factory = initFactory();
-  //   }
-    
-  //   private ConnectionFactory initFactory() {
-  //     String username = getValueOrDefault("amqp_username", key);
-  //     if (username != null) {
-  // 	super.setUsername(username);
-  //     }
-  //     String password = getValueOrDefault("amqp_password", key);
-  //     if (password != null) {
-  // 	super.setPassword(password);
-  //     }
-  //     String virtualHost = getValueOrDefault("amqp_virtual_host", key);
-  //     if ( virtualHost != null) {
-  // 	super.setVirtualHost(virtualHost);
-  //     }
-  //     Integer port = getIntegerOrDefault("amqp_port", key);
-  //     if (port != null) {
-  // 	super.setPort(port);
-  //     }
-  //     return factory;
-  //   }
-
-  //   @Override
-  //   public Connection newConnection(ExecutorService executor) 
-  //     throws IOException {
-  //     Iterable<String> hosts = conf.getIterable("amqp_hosts");
-  //     if (hosts == null || !hosts.hasNext()) {
-  // 	hosts = Lists.newArrayList("localhost");
-  //     }
-  //     Iterator<String> iterator = hosts.iterator();
-  //     Connection conn == null;
-  //     while (iterator.hasNext() && conn == null) {
-  // 	String host = iterator.next();
-  // 	if (host != null) {
-  // 	  factory.setHost(host);
-  // 	  try {
-  // 	    tryNextHost = false;
-  // 	    if (executor == null) {
-  // 	      conn = super.newConnection();
-  // 	    } else {
-  // 	      conn = super.newConnection(executor);
-  // 	    }
-  // 	  } catch (IOException ex) {
-  // 	    logger.warn("Connection attempt failed for host: " + host, ex);
-  // 	  } 
-  // 	}
-  //     }
-  //     if (conn != null) {
-  // 	return conn;
-  //     }
-  //     String msg = "No valid host configuration was found: " + hosts;
-  //     throw new IllegalArgumentException(msg);
-  //   }
-    
-  //   @Override
-  //   public Connection newConnection() {
-  //     this.newConnection(null);
-  //   }
-  // }
-  
-  // public Channel declareChannel(<? extends ConnectionFactory> factory,
-  // 				String key) throws Exception {
 
   public Channel declareChannel(ConnectionFactory factory, String key) 
     throws Exception {
@@ -233,10 +162,10 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
 
   public Address[] getMultipleHosts() {
     Iterable<String> hosts = conf.getIterable("amqp_hosts");
-    if (hosts == null || !hosts.hasNext()) {
+    if (hosts == null) {
       return null;
     }
-    List<Address> addressList = Lists.newArrayList();
+    List<Address> addressList = new ArrayList<Address>();
     for (String host : hosts) {
       if (host != null) {
 	addressList.add(new Address(host));
@@ -255,6 +184,10 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
 
   private Integer getIntegerOrDefault(String type, String key) {
     return conf.getInteger(type + ((key != null) ? "_" +  key : ""));
+  }
+
+  private Boolean getBooleanOrDefault(String type, String key) {
+    return conf.getBoolean(type + ((key != null) ? "_" +  key : ""));
   }
 
   public QueueingConsumer createQueueingConsumer(Channel channel, 

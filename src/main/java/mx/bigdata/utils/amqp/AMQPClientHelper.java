@@ -16,6 +16,9 @@
 
 package mx.bigdata.utils.amqp;
 
+import java.util.List;
+import java.util.Map;
+
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -31,6 +34,10 @@ public interface AMQPClientHelper {
   Channel declareChannel(ConnectionFactory factory, String key) 
     throws Exception;
 
+  Channel declareChannel(ConnectionFactory factory, String key, 
+			 boolean delcareExchange) 
+    throws Exception;
+
   String createQueue(Channel channel, String key) throws Exception;  
 
   @Deprecated
@@ -39,6 +46,10 @@ public interface AMQPClientHelper {
 
   String createQueue(Channel channel, String key, boolean durable, 
 		     boolean exclusive, boolean autoDelete) throws Exception;  
+
+  String createQueue(Channel channel, String key, boolean durable, 
+		     boolean exclusive, boolean autoDelete, 
+		     Map<String, Object> args) throws Exception;
   
   String createNamedQueue(Channel channel, String key) 
     throws Exception;  
@@ -50,6 +61,10 @@ public interface AMQPClientHelper {
   String getExchangeName(String key);
 
   String getExchangeType(String key);
+
+  String getHaPolicy(String key);
+
+  List<String> getHaPolicyParams(String key);
 
   QueueingConsumer createQueueingConsumer(Channel channel, String queue) 
     throws Exception;

@@ -16,8 +16,9 @@
 
 package mx.bigdata.utils.amqp;
 
-//import java.util.concurrent.ExecutorService;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +86,13 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
 
   public Channel declareChannel(ConnectionFactory factory, String key) 
     throws Exception {
-    Address[] hosts = getMultipleHosts();
+    return declareChannel(factory, key, true);
+  }
+
+  public Channel declareChannel(ConnectionFactory factory, String key, 
+				boolean delcareExchange) 
+    throws Exception {
+    Address[] hosts = getMultipleHosts(key);
     Connection conn;
     if (hosts == null) {
       conn = factory.newConnection();
@@ -99,9 +106,11 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
     } else {
       channel.basicQos(DEFAULT_QOS);
     }
-    channel.exchangeDeclare(getExchangeName(key), 
-                            getExchangeType(key), 
-                            true);
+    if (delcareExchange) {
+      channel.exchangeDeclare(getExchangeName(key), 
+			      getExchangeType(key), 
+			      true);
+    }
     return channel;
   }
 
@@ -160,8 +169,28 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
     return getValueOrDefault("queue_name", key);
   }
 
-  public Address[] getMultipleHosts() {
-    Iterable<String> hosts = conf.getIterable("amqp_hosts");
+  public String getHaPolicy(String key) {
+    String policy = getValueOrDefault("x_ha_policy", key);
+    if ("all".equals(policy) || "nodes".equals(policy)) {
+      return policy;
+    }
+    return null;
+  }
+
+  public List<String> getHaPolicyParams(String key) {
+    Iterable<String> params = conf.getIterable("x_ha_params");
+    if (params == null) {
+      return Collections.EMPTY_LIST;
+    }
+    List result = new ArrayList<String>();
+    for (String param : params) {
+      result.add(param);
+    }
+    return result;
+  }
+
+  public Address[] getMultipleHosts(String key) {
+    Iterable<String> hosts = getIterableOrDefault("amqp_hosts", key);
     if (hosts == null) {
       return null;
     }
@@ -178,16 +207,25 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
   }
 
   private String getValueOrDefault(String type, String key) {
-    return conf.getString(type + ((key != null) ? "_" +  key : ""));
+    String value = conf.getString(type + ((key != null) ? "_" +  key : ""));
+    return (value != null) ? value : conf.getString(type);
 
   }
 
   private Integer getIntegerOrDefault(String type, String key) {
-    return conf.getInteger(type + ((key != null) ? "_" +  key : ""));
+    Integer value = conf.getInteger(type + ((key != null) ? "_" +  key : ""));
+    return (value != null) ? value : conf.getInteger(type);
   }
 
   private Boolean getBooleanOrDefault(String type, String key) {
-    return conf.getBoolean(type + ((key != null) ? "_" +  key : ""));
+    Boolean value = conf.getBoolean(type + ((key != null) ? "_" +  key : ""));
+    return (value != null) ? value : conf.getBoolean(type);
+  }
+
+  private <E extends Object> Iterable<E> getIterableOrDefault(String type, 
+							      String key) {
+    Iterable value = conf.getIterable(type + ((key != null) ? "_" +  key : ""));
+    return (Iterable<E>) ((value != null) ? value : conf.getIterable(type));
   }
 
   public QueueingConsumer createQueueingConsumer(Channel channel, 

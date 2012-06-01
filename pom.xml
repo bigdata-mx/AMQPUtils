@@ -48,11 +48,7 @@
     <dependency>
       <groupId>mx.bigdata.anyobject</groupId>
       <artifactId>anyobject</artifactId>
-<<<<<<< HEAD
-      <version>1.0.1-SNAPSHOT</version>
-=======
-      <version>1.0.0</version>
->>>>>>> c65d6034a15fdccaa4a87f7f1cbffe080ba58adc
+      <version>1.0.1</version>
     </dependency>
   </dependencies>
   <build>

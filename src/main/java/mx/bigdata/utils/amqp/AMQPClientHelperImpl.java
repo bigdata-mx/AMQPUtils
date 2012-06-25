@@ -16,7 +16,15 @@
 
 package mx.bigdata.utils.amqp;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Address;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
@@ -64,12 +72,33 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
     if (port != null) {
       factory.setPort(port);
     }
+    Boolean notifyCancel = 
+      getBooleanOrDefault("amqp_consumer_cancel_notify", key);
+    if (notifyCancel != null && notifyCancel) {
+      Map<String, Object> properties = new HashMap<String, Object>();
+      Map<String, Object> capabilities = new HashMap<String, Object>();
+      capabilities.put("consumer_cancel_notify", true);
+      properties.put("capabilities", capabilities);
+      factory.setClientProperties(properties);
+    }
     return factory;
   }
-  
+
   public Channel declareChannel(ConnectionFactory factory, String key) 
     throws Exception {
-    Connection conn = factory.newConnection();
+    return declareChannel(factory, key, true);
+  }
+
+  public Channel declareChannel(ConnectionFactory factory, String key, 
+				boolean delcareExchange) 
+    throws Exception {
+    Address[] hosts = getMultipleHosts(key);
+    Connection conn;
+    if (hosts == null) {
+      conn = factory.newConnection();
+    } else {
+      conn = factory.newConnection(hosts);
+    }
     Channel channel = conn.createChannel();
     Integer basicQos = conf.getInteger("channel_basic_qos");
     if (basicQos != null) {
@@ -77,9 +106,11 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
     } else {
       channel.basicQos(DEFAULT_QOS);
     }
-    channel.exchangeDeclare(getExchangeName(key), 
-                            getExchangeType(key), 
-                            true);
+    if (delcareExchange) {
+      channel.exchangeDeclare(getExchangeName(key), 
+			      getExchangeType(key), 
+			      true);
+    }
     return channel;
   }
 
@@ -104,12 +135,18 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
   public String createQueue(Channel channel, String key, boolean durable, 
 			    boolean exclusive, boolean autoDelete) 
     throws Exception {
+    return createQueue(channel, key, durable, exclusive, autoDelete, null);
+  }
+
+  public String createQueue(Channel channel, String key, boolean durable, 
+			    boolean exclusive, boolean autoDelete, 
+			    Map<String, Object> args) 
+    throws Exception {
     String queueName = getQueueName(key);
-    channel.queueDeclare(queueName, durable, exclusive, autoDelete, null);
+    channel.queueDeclare(queueName, durable, exclusive, autoDelete, args);
     channel.queueBind(queueName, getExchangeName(key), getRoutingKey(key));
     return queueName;
   }
-
 
   public String getRoutingKey() {
     return getRoutingKey(null);
@@ -132,13 +169,63 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
     return getValueOrDefault("queue_name", key);
   }
 
+  public String getHaPolicy(String key) {
+    String policy = getValueOrDefault("x_ha_policy", key);
+    if ("all".equals(policy) || "nodes".equals(policy)) {
+      return policy;
+    }
+    return null;
+  }
+
+  public List<String> getHaPolicyParams(String key) {
+    Iterable<String> params = conf.getIterable("x_ha_params");
+    if (params == null) {
+      return Collections.EMPTY_LIST;
+    }
+    List result = new ArrayList<String>();
+    for (String param : params) {
+      result.add(param);
+    }
+    return result;
+  }
+
+  public Address[] getMultipleHosts(String key) {
+    Iterable<String> hosts = getIterableOrDefault("amqp_hosts", key);
+    if (hosts == null) {
+      return null;
+    }
+    List<Address> addressList = new ArrayList<Address>();
+    for (String host : hosts) {
+      if (host != null) {
+	addressList.add(new Address(host));
+      }
+    }
+    if (addressList.size() > 0) {
+      return addressList.toArray(new Address[0]);
+    }
+    return null;
+  }
+
   private String getValueOrDefault(String type, String key) {
-    return conf.getString(type + ((key != null) ? "_" +  key : ""));
+    String value = conf.getString(type + ((key != null) ? "_" +  key : ""));
+    return (value != null) ? value : conf.getString(type);
 
   }
 
   private Integer getIntegerOrDefault(String type, String key) {
-    return conf.getInteger(type + ((key != null) ? "_" +  key : ""));
+    Integer value = conf.getInteger(type + ((key != null) ? "_" +  key : ""));
+    return (value != null) ? value : conf.getInteger(type);
+  }
+
+  private Boolean getBooleanOrDefault(String type, String key) {
+    Boolean value = conf.getBoolean(type + ((key != null) ? "_" +  key : ""));
+    return (value != null) ? value : conf.getBoolean(type);
+  }
+
+  private <E extends Object> Iterable<E> getIterableOrDefault(String type, 
+							      String key) {
+    Iterable value = conf.getIterable(type + ((key != null) ? "_" +  key : ""));
+    return (Iterable<E>) ((value != null) ? value : conf.getIterable(type));
   }
 
   public QueueingConsumer createQueueingConsumer(Channel channel, 

@@ -29,7 +29,10 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.QueueingConsumer;
+import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
+
+import org.apache.log4j.Logger;
 
 import mx.bigdata.anyobject.AnyObject;
 
@@ -38,6 +41,8 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
   private static final int DEFAULT_QOS = 1000;
 
   private static final String DEFAULT_ROUTING_KEY = "-";
+
+  private final Logger logger = Logger.getLogger(getClass());
 
   private final AnyObject conf;
 
@@ -71,6 +76,10 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
     Integer port = getIntegerOrDefault("amqp_port", key);
     if (port != null) {
       factory.setPort(port);
+    }
+    Integer heartbeat = getIntegerOrDefault("amqp_heartbeat", key);
+    if (heartbeat != null) {
+      factory.setRequestedHeartbeat(heartbeat);
     }
     Boolean notifyCancel = 
       getBooleanOrDefault("amqp_consumer_cancel_notify", key);
@@ -111,6 +120,12 @@ public final class AMQPClientHelperImpl implements AMQPClientHelper {
 			      getExchangeType(key), 
 			      true);
     }
+    conn.addShutdownListener(new ShutdownListener() {
+	public void shutdownCompleted(ShutdownSignalException cause) {
+	  logger.debug("Connection shutdown has completed", cause);
+	}
+      });
+    AMQPFinalizer.getInstance().registerConnection(conn);
     return channel;
   }
 

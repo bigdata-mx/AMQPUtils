@@ -27,8 +27,7 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.QueueingConsumer;
 import com.rabbitmq.client.ShutdownSignalException;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.log4j.Logger;
 
 import mx.bigdata.utils.amqp.AMQPClientHelper;
 
@@ -36,7 +35,7 @@ public abstract class ReconnectingConsumer {
   
   private final static int MAX_BACKOFF = 32*1000;
   
-  private final Logger logger = Logger.getLogger(getClass().getName());
+  private final Logger logger = Logger.getLogger(getClass());
 
   private final ConnectionFactory factory;
 
@@ -102,7 +101,7 @@ public abstract class ReconnectingConsumer {
 	  
 	  @Override
 	  public void handleCancel(String consumerTag) throws IOException {
-	    logger.warning("handleCancel for consumer tag: " + consumerTag);
+	    logger.warn("handleCancel for consumer tag: " + consumerTag);
 	    try { 
 	      this.getChannel()
 		.basicCancel(ReconnectingConsumer.this.consumerTag); 
@@ -116,26 +115,34 @@ public abstract class ReconnectingConsumer {
 	  @Override
 	  public void handleShutdownSignal(java.lang.String consumerTag,
 					   ShutdownSignalException sig) {
-	    logger.log(Level.WARNING, "ShutdownSignal for tag: " + tag
-		       + "\n\t consumer tag: " + consumerTag 
-		       + "\n\t reason: " + sig.getReason() 
-		       + "\n\t reference: " + sig.getReason(), sig);
 	    try { 
-	      this.getChannel()
-		.basicCancel(ReconnectingConsumer.this.consumerTag); 
-	    } catch(Exception ignore) { }
-	    try {
-	      this.getChannel().getConnection().close();
-	    } catch(Exception ignore) { }
-	    reconnect();
+	      getChannel().basicCancel(ReconnectingConsumer.this.consumerTag); 
+	    } catch(Exception ignore) { 
+	      ;
+	    }
+	    getChannel().getConnection().abort(10000);
+	    if (!sig.isInitiatedByApplication()) {
+	      logger.warn("ShutdownSignal for tag: " + tag
+			  + "\n\t consumer tag: " + consumerTag 
+			  + "\n\t reason: " + sig.getReason() 
+			  + "\n\t reference: " + sig.getReason()
+			  + "\n\t ", sig);
+	      reconnect();
+	    } else {
+	      logger.debug("ShutdownSignal for tag: " + tag
+			   + "\n\t consumer tag: " + consumerTag 
+			   + "\n\t reason: " + sig.getReason() 
+			   + "\n\t reference: " + sig.getReason()
+			   + "\n\t ", sig);
+	    }
 	  }
 	};
-
+      
       channel.basicConsume(queue, false, consumer);
       logger.info("Consumer " + tag + " initilized");
       return true;
     } catch (Throwable e) {
-      logger.fine("Exception initializing consumer " + tag + ": " + e);
+      logger.error("Exception initializing consumer " + tag + ": ", e);
       if (channel != null) {
 	try {
 	  channel.getConnection().close();
@@ -146,10 +153,6 @@ public abstract class ReconnectingConsumer {
   }
 
   protected Channel getChannel() {
-    return consumer.getChannel();
-  }
-
-  protected Channel channel() {
     return consumer.getChannel();
   }
 
@@ -174,6 +177,14 @@ public abstract class ReconnectingConsumer {
 	pow += 1;
       }
       reconnect(backoff, pow);
+    }
+  }
+
+  public void close() {
+    try {
+      getChannel().getConnection().close();
+    } catch (Exception e) {
+      logger.warn("Exception while closing conneciton: ", e);
     }
   }
 }

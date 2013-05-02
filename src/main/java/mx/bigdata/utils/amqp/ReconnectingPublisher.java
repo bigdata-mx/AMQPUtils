@@ -29,14 +29,13 @@ import com.rabbitmq.client.QueueingConsumer;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.log4j.Logger;
 
 import mx.bigdata.utils.amqp.AMQPClientHelper;
 
 public class ReconnectingPublisher {  
 
-  private final Logger logger = Logger.getLogger(getClass().getName());
+  private final Logger logger = Logger.getLogger(getClass());
 
   private final ConnectionFactory factory;
 
@@ -51,7 +50,7 @@ public class ReconnectingPublisher {
   private Channel out;
 
   public ReconnectingPublisher(String tag, String key, AMQPClientHelper amqp, 
-			      ConnectionFactory factory) {
+			       ConnectionFactory factory) {
     this.tag = tag;
     this.key = key;
     this.amqp = amqp;
@@ -76,19 +75,23 @@ public class ReconnectingPublisher {
       }
       out.addShutdownListener(new ShutdownListener() {
 	  public void shutdownCompleted(ShutdownSignalException sig) {
-	    logger.log(Level.WARNING, "ShutdownSignal for tag: " + tag
-		       + "\n\t reason: " + sig.getReason() 
-		       + "\n\t reference: " + sig.getReason(), sig);
-	    try {
-	      out.getConnection().close();
-	    } catch(Exception ignore) { }
-	    reconnect();
+	    out.getConnection().abort(10000);
+	    if (!sig.isInitiatedByApplication()) {
+	      logger.warn("ShutdownSignal for tag: " + tag
+			  + "\n\t reason: " + sig.getReason() 
+			  + "\n\t reference: " + sig.getReason() 
+			  + "\n\t ", sig);
+	      reconnect();
+	    } else {
+	      logger.debug("ShutdownSignal for tag: " + tag
+			   + "\n\t reason: " + sig.getReason());
+	    }
 	  }
 	});
       logger.info("Publisher " + tag + " initilized");
       return true;
     } catch (Throwable e) {
-      logger.fine("Exception initializing publisher " + tag + ": " + e);
+      logger.error("Exception initializing publisher " + tag + ": ", e);
       if (out != null) {
 	try {
 	  out.getConnection().close();
@@ -120,7 +123,7 @@ public class ReconnectingPublisher {
       }
       out.basicPublish(exch, routingKey, mandatory, immediate, props, bytes);
     } catch(Exception e) {
-      logger.log(Level.WARNING, "Exception while publishing: ", e);
+      logger.warn("Exception while publishing: ", e);
       try {
 	out.getConnection().close();
       } catch(Exception ingnore) { }
@@ -146,6 +149,14 @@ public class ReconnectingPublisher {
       backoff = (int) (Math.pow(2, pow));
       pow += 1;
       reconnect(backoff, pow);
+    }
+  }
+
+  public void close() {
+    try {
+      out.getConnection().close();
+    } catch (Exception e) {
+      logger.warn("Exception while closing conneciton: ", e);
     }
   }
 }

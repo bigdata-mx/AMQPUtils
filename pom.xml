@@ -43,12 +43,13 @@
     <dependency>
       <groupId>com.rabbitmq</groupId>
       <artifactId>amqp-client</artifactId>
-      <version>3.0.4</version>
+      <version>3.1.1</version>
+      <!-- <version>3.0.4</version> -->
     </dependency>
     <dependency>
       <groupId>mx.bigdata.anyobject</groupId>
       <artifactId>anyobject</artifactId>
-      <version>1.0.4-SNAPSHOT</version>
+      <version>1.0.4</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

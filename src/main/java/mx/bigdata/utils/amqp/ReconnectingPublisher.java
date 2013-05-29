@@ -85,18 +85,16 @@ public class ReconnectingPublisher {
 	    } else {
 	      logger.debug("ShutdownSignal for tag: " + tag
 			   + "\n\t reason: " + sig.getReason());
+	      out = null;
 	    }
 	  }
 	});
-      logger.info("Publisher " + tag + " initilized");
+      logger.info("Publisher " + tag + " initialized");
       return true;
     } catch (Throwable e) {
       logger.error("Exception initializing publisher " + tag + ": ", e);
       if (out != null) {
-	try {
-	  out.getConnection().close();
-	} catch (Exception ingore) { }
-	//out = null;
+	out.getConnection().abort(5000);
       }
     }
     return false;
@@ -125,18 +123,22 @@ public class ReconnectingPublisher {
     } catch(Exception e) {
       logger.warn("Exception while publishing: ", e);
       try {
-	out.getConnection().close();
+	out.getConnection().abort(5000);
       } catch(Exception ingnore) { }
-      reconnect();
-      publish(exch, routingKey, mandatory, immediate, props, bytes);
+      if (reconnect()) {
+	publish(exch, routingKey, mandatory, immediate, props, bytes);
+      }
     }
   }
   
-  private void reconnect() {
-    reconnect(0, 1);
+  private boolean reconnect() {
+    return reconnect(0, 1);
   }
 
-  private void reconnect(int backoff, int pow) {
+  private boolean reconnect(int backoff, int pow) {
+    if (out == null) {
+      return false;
+    }
     try {
       if (backoff > 0) {
 	logger.info("Reconnecting consumer " + tag + " in " 
@@ -148,15 +150,12 @@ public class ReconnectingPublisher {
     if (!initialized) {
       backoff = (int) (Math.pow(2, pow));
       pow += 1;
-      reconnect(backoff, pow);
+      return reconnect(backoff, pow);
     }
+    return true;
   }
 
   public void close() {
-    try {
-      out.getConnection().close();
-    } catch (Exception e) {
-      logger.warn("Exception while closing conneciton: ", e);
-    }
+    out.getConnection().abort(5000);
   }
 }

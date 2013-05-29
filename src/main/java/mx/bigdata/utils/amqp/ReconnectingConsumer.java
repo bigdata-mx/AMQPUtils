@@ -84,12 +84,6 @@ public abstract class ReconnectingConsumer {
 				     AMQP.BasicProperties properties,
 				     byte[] body)
 	    throws IOException {
-	    // try {
-	    //   ReconnectingConsumer.this
-	    // 	.handleDelivery(consumerTag, envelope, properties, body);
-	    // } catch (IOException ex) {
-	    //   this.getChannel().basicReject(envelope.getDeliveryTag(), false);
-	    // }
 	    ReconnectingConsumer.this
 	      .handleDelivery(consumerTag, envelope, properties, body);
 	  }
@@ -106,9 +100,7 @@ public abstract class ReconnectingConsumer {
 	      this.getChannel()
 		.basicCancel(ReconnectingConsumer.this.consumerTag); 
 	    } catch(Exception ignore) { }
-	    try { 
-	      this.getChannel().getConnection().close();
-	    } catch(Exception ignore) { }
+	    this.getChannel().getConnection().abort(5000);
 	    reconnect();
 	  }
 	  
@@ -120,7 +112,7 @@ public abstract class ReconnectingConsumer {
 	    } catch(Exception ignore) { 
 	      ;
 	    }
-	    getChannel().getConnection().abort(10000);
+	    getChannel().getConnection().abort(5000);
 	    if (!sig.isInitiatedByApplication()) {
 	      logger.warn("ShutdownSignal for tag: " + tag
 			  + "\n\t consumer tag: " + consumerTag 
@@ -134,6 +126,7 @@ public abstract class ReconnectingConsumer {
 			   + "\n\t reason: " + sig.getReason() 
 			   + "\n\t reference: " + sig.getReason()
 			   + "\n\t ", sig);
+	      consumer = null;
 	    }
 	  }
 	};
@@ -144,9 +137,7 @@ public abstract class ReconnectingConsumer {
     } catch (Throwable e) {
       logger.error("Exception initializing consumer " + tag + ": ", e);
       if (channel != null) {
-	try {
-	  channel.getConnection().close();
-	} catch (Exception ingore) { }
+	channel.getConnection().abort(5000);
       }
     } 
     return false;
@@ -156,11 +147,14 @@ public abstract class ReconnectingConsumer {
     return consumer.getChannel();
   }
 
-  private void reconnect() {
-    reconnect(0, 1);
+  private boolean reconnect() {
+    return reconnect(0, 1);
   }
 
-  private void reconnect(int backoff, int pow) {
+  private boolean reconnect(int backoff, int pow) {
+    if (consumer == null) {
+      return false;
+    }
     try {
       if (backoff > 0) {
 	logger.info("Reconnecting consumer " + tag + " in " 
@@ -176,15 +170,12 @@ public abstract class ReconnectingConsumer {
 	backoff = (int) (Math.pow(2, pow));
 	pow += 1;
       }
-      reconnect(backoff, pow);
+      return reconnect(backoff, pow);
     }
+    return true;
   }
 
   public void close() {
-    try {
-      getChannel().getConnection().close();
-    } catch (Exception e) {
-      logger.warn("Exception while closing conneciton: ", e);
-    }
+    getChannel().getConnection().abort(5000);
   }
 }

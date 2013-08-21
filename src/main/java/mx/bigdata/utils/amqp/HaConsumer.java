@@ -32,25 +32,22 @@ import mx.bigdata.utils.amqp.AMQPClientHelper;
 
 public abstract class HaConsumer extends ReconnectingConsumer {  
 
+  private final static int DEFAULT_HEARTBEAT_SECONDS = 50;
+  
   public HaConsumer(String tag, String key, AMQPClientHelper amqp, 
 		    ConnectionFactory factory) {
     super(tag, key, amqp, factory);
+    if (factory.getRequestedHeartbeat() == 0) {
+      factory.setRequestedHeartbeat(DEFAULT_HEARTBEAT_SECONDS);
+    }
   }
 
   public HaConsumer(String tag, String key, AMQPClientHelper amqp) 
     throws Exception {
-    super(tag, key, amqp);
+    this(tag, key, amqp, amqp.createConnectionFactory(key));
   }
 
   protected String createQueue(Channel channel, String key) throws Exception {
-     Map<String, Object> args = new HashMap<String, Object>();
-     String policy = amqp.getHaPolicy(key);
-     if (policy != null) {
-       args.put("x-ha-policy", amqp.getHaPolicy(key));
-       if (policy.equals("nodes")) {
-	 args.put("x-ha-policy-params", amqp.getHaPolicyParams(key));
-       }
-     }
-     return amqp.createQueue(channel, key, true, false, false, args);
+    return amqp.createQueue(channel, key, true, false, false);
   }
 }

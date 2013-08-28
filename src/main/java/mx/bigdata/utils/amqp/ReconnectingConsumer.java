@@ -34,7 +34,7 @@ import mx.bigdata.utils.amqp.AMQPClientHelper;
 public abstract class ReconnectingConsumer {  
   
   private final static int MAX_BACKOFF = 32*1000;
-  
+
   private final Logger logger = Logger.getLogger(getClass());
 
   private final ConnectionFactory factory;
@@ -95,7 +95,7 @@ public abstract class ReconnectingConsumer {
 	  
 	  @Override
 	  public void handleCancel(String consumerTag) throws IOException {
-	    logger.warn("handleCancel for consumer tag: " + consumerTag);
+	    logger.warn(tag + " handleCancel for consumer tag: " + consumerTag);
 	    try { 
 	      this.getChannel()
 		.basicCancel(ReconnectingConsumer.this.consumerTag); 
@@ -114,14 +114,14 @@ public abstract class ReconnectingConsumer {
 	    }
 	    getChannel().getConnection().abort(5000);
 	    if (!sig.isInitiatedByApplication()) {
-	      logger.warn("ShutdownSignal for tag: " + tag
+	      logger.warn(tag + " ShutdownSignal for tag: " + tag
 			  + "\n\t consumer tag: " + consumerTag 
 			  + "\n\t reason: " + sig.getReason() 
 			  + "\n\t reference: " + sig.getReason()
 			  + "\n\t ", sig);
 	      reconnect();
 	    } else {
-	      logger.debug("ShutdownSignal for tag: " + tag
+	      logger.debug(tag + " ShutdownSignal for tag: " + tag
 			   + "\n\t consumer tag: " + consumerTag 
 			   + "\n\t reason: " + sig.getReason() 
 			   + "\n\t reference: " + sig.getReason()

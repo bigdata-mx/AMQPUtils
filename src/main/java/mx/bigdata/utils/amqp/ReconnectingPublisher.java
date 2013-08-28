@@ -39,7 +39,7 @@ public class ReconnectingPublisher {
 
   private final ConnectionFactory factory;
 
-  private final String tag;
+  protected final String tag;
 
   protected final String key;
 
@@ -77,13 +77,13 @@ public class ReconnectingPublisher {
 	  public void shutdownCompleted(ShutdownSignalException sig) {
 	    out.getConnection().abort(10000);
 	    if (!sig.isInitiatedByApplication()) {
-	      logger.warn("ShutdownSignal for tag: " + tag
+	      logger.warn(tag + " ShutdownSignal for tag: " + tag
 			  + "\n\t reason: " + sig.getReason() 
 			  + "\n\t reference: " + sig.getReason() 
 			  + "\n\t ", sig);
 	      reconnect();
 	    } else {
-	      logger.debug("ShutdownSignal for tag: " + tag
+	      logger.debug(tag + " ShutdownSignal for tag: " + tag
 			   + "\n\t reason: " + sig.getReason());
 	      out = null;
 	    }
@@ -109,9 +109,10 @@ public class ReconnectingPublisher {
     publish(exchange, routingKey, false, false, null, bytes);
   }
   
-  public void publish(String exch, String routingKey, boolean mandatory, 
-		      boolean immediate, AMQP.BasicProperties props, 
-		      byte[] bytes) throws IOException {
+  public synchronized void publish(String exch, String routingKey, 
+				   boolean mandatory, boolean immediate, 
+				   AMQP.BasicProperties props, 
+				   byte[] bytes) throws IOException {
     try {
       exch = (exch == null) ? amqp.getExchangeName(key) : exch;
       routingKey = (routingKey == null) ? amqp.getRoutingKey(key) : routingKey;
@@ -121,7 +122,7 @@ public class ReconnectingPublisher {
       }
       out.basicPublish(exch, routingKey, mandatory, immediate, props, bytes);
     } catch(Exception e) {
-      logger.warn("Exception while publishing: ", e);
+      logger.warn(tag + " Exception while publishing: ", e);
       try {
 	out.getConnection().abort(5000);
       } catch(Exception ingnore) { }
@@ -129,6 +130,10 @@ public class ReconnectingPublisher {
 	publish(exch, routingKey, mandatory, immediate, props, bytes);
       }
     }
+  }
+
+  protected Channel getChannel() {
+    return out;
   }
   
   private boolean reconnect() {

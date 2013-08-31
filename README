@@ -4,9 +4,9 @@ AMQPUtils is a simple RabbitMQ Java client wrapper
 
 Maven
 ==
-     <dependency>
-	    <groupId>mx.bigdata.utils</groupId>
-	    <artifactId>amqp-utils</artifactId>
-	    <version>1.2.1</version>
-     </dependency>
+<dependency>
+    <groupId>mx.bigdata.utils</groupId>
+    <artifactId>amqp-utils</artifactId>
+    <version>1.3.0</version>
+</dependency>
             

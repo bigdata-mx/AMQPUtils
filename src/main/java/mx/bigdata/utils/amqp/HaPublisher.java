@@ -111,9 +111,9 @@ public final class HaPublisher extends ReconnectingPublisher {
 				   boolean mandatory, boolean immediate, 
 				   AMQP.BasicProperties props, 
 				   byte[] bytes) throws IOException {
-    if (props == null) {
-      props = MessageProperties.PERSISTENT_BASIC;
-    }
+    // if (props == null) {
+    //   props = MessageProperties.PERSISTENT_BASIC;
+    // }
     PublishWrapper msg = 
       new PublishWrapper(exch, routingKey, mandatory, immediate, props, bytes);
     logger.trace("Publishing: " + msg);

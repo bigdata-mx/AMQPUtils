@@ -3,7 +3,7 @@
 
   <groupId>mx.bigdata.utils</groupId>
   <artifactId>amqp-utils</artifactId>
-  <version>1.4.0</version>
+  <version>1.4.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>

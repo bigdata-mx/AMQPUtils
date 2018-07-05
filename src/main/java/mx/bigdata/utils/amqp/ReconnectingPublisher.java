@@ -50,7 +50,7 @@ public class ReconnectingPublisher {
   private Channel out;
 
   public ReconnectingPublisher(String tag, String key, AMQPClientHelper amqp, 
-			       ConnectionFactory factory) {
+                               ConnectionFactory factory) {
     this.tag = tag;
     this.key = key;
     this.amqp = amqp;
@@ -68,33 +68,33 @@ public class ReconnectingPublisher {
       declaredExchanges.clear();
       String exchName = amqp.getExchangeName(key);
       if (exchName == null || amqp.getExchangeType(key) == null) {
-	out = amqp.declareChannel(factory, key, false);
+        out = amqp.declareChannel(factory, key, false);
       } else {
-	out = amqp.declareChannel(factory, key);
-	declaredExchanges.add(exchName);
+        out = amqp.declareChannel(factory, key);
+        declaredExchanges.add(exchName);
       }
       out.addShutdownListener(new ShutdownListener() {
-	  public void shutdownCompleted(ShutdownSignalException sig) {
-	    out.getConnection().abort(10000);
-	    if (!sig.isInitiatedByApplication()) {
-	      logger.warn(tag + " ShutdownSignal for tag: " + tag
-			  + "\n\t reason: " + sig.getReason() 
-			  + "\n\t reference: " + sig.getReason() 
-			  + "\n\t ", sig);
-	      reconnect();
-	    } else {
-	      logger.debug(tag + " ShutdownSignal for tag: " + tag
-			   + "\n\t reason: " + sig.getReason());
-	      out = null;
-	    }
-	  }
-	});
+          public void shutdownCompleted(ShutdownSignalException sig) {
+            out.getConnection().abort(10000);
+            if (!sig.isInitiatedByApplication()) {
+              logger.warn(tag + " ShutdownSignal for tag: " + tag
+                          + "\n\t reason: " + sig.getReason() 
+                          + "\n\t reference: " + sig.getReason() 
+                          + "\n\t ", sig);
+              reconnect();
+            } else {
+              logger.debug(tag + " ShutdownSignal for tag: " + tag
+                           + "\n\t reason: " + sig.getReason());
+              out = null;
+            }
+          }
+        });
       logger.info("Publisher " + tag + " initialized");
       return true;
     } catch (Throwable e) {
       logger.error("Exception initializing publisher " + tag + ": ", e);
       if (out != null) {
-	out.getConnection().abort(5000);
+        out.getConnection().abort(5000);
       }
     }
     return false;
@@ -110,24 +110,24 @@ public class ReconnectingPublisher {
   }
   
   public synchronized void publish(String exch, String routingKey, 
-				   boolean mandatory, boolean immediate, 
-				   AMQP.BasicProperties props, 
-				   byte[] bytes) throws IOException {
+                                   boolean mandatory, boolean immediate, 
+                                   AMQP.BasicProperties props, 
+                                   byte[] bytes) throws IOException {
     try {
       exch = (exch == null) ? amqp.getExchangeName(key) : exch;
       routingKey = (routingKey == null) ? amqp.getRoutingKey(key) : routingKey;
       if (!declaredExchanges.contains(exch)) {
-	out.exchangeDeclare(exch, amqp.getExchangeType(key), true);
-	declaredExchanges.add(exch);
+        out.exchangeDeclare(exch, amqp.getExchangeType(key), true);
+        declaredExchanges.add(exch);
       }
       out.basicPublish(exch, routingKey, mandatory, immediate, props, bytes);
     } catch(Exception e) {
       logger.warn(tag + " Exception while publishing: ", e);
       try {
-	out.getConnection().abort(5000);
+        out.getConnection().abort(5000);
       } catch(Exception ingnore) { }
       if (reconnect()) {
-	publish(exch, routingKey, mandatory, immediate, props, bytes);
+        publish(exch, routingKey, mandatory, immediate, props, bytes);
       }
     }
   }
@@ -146,9 +146,9 @@ public class ReconnectingPublisher {
     }
     try {
       if (backoff > 0) {
-	logger.info("Reconnecting consumer " + tag + " in " 
-		    + (backoff / 1000) + " seconds ");
-	Thread.sleep(backoff);
+        logger.info("Reconnecting consumer " + tag + " in " 
+                    + (backoff / 1000) + " seconds ");
+        Thread.sleep(backoff);
       }
     } catch (InterruptedException ignore) { }
     boolean initialized = initPublisher();

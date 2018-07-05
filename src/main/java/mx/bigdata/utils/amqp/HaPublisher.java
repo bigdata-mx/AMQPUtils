@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.ConfirmListener;
@@ -51,7 +51,7 @@ public final class HaPublisher extends ReconnectingPublisher {
     Collections.synchronizedSortedMap(new TreeMap<Long, PublishWrapper>());
   
   public HaPublisher(String tag, String key, AMQPClientHelper amqp, 
-		     ConnectionFactory factory) throws Exception {
+                     ConnectionFactory factory) throws Exception {
     super(tag, key, amqp, factory);
     if (factory.getRequestedHeartbeat() == 0) {
       factory.setRequestedHeartbeat(DEFAULT_HEARTBEAT_SECONDS);
@@ -61,42 +61,42 @@ public final class HaPublisher extends ReconnectingPublisher {
   
   private void initConfirms() throws Exception {
     getChannel().addConfirmListener(new ConfirmListener() {
-	public void handleAck(long seqNo, boolean multiple) {
-	  if (multiple) {
+        public void handleAck(long seqNo, boolean multiple) {
+          if (multiple) {
             Map<Long, PublishWrapper> headMap = unconfirmedMap.headMap(seqNo+1);
-	    logger.trace(tag + " confirmed " + headMap.size() 
-			 + " messages up to " + seqNo + " sequence number");
-	    headMap.clear();
-	  } else {
-	    logger.trace(tag + " confirmed 1 messages with " + seqNo 
-			 + " sequence number");
+            logger.trace(tag + " confirmed " + headMap.size() 
+                         + " messages up to " + seqNo + " sequence number");
+            headMap.clear();
+          } else {
+            logger.trace(tag + " confirmed 1 messages with " + seqNo 
+                         + " sequence number");
             unconfirmedMap.remove(seqNo);
-	  }
-	}
+          }
+        }
 	
-	public void handleNack(long seqNo, boolean multiple) {
-	  if (multiple) {
-	    Iterator<Map.Entry<Long, PublishWrapper>> entries = unconfirmedMap
-	      .headMap(seqNo+1).entrySet().iterator();
-	    while (entries.hasNext()) {
-	      Map.Entry<Long, PublishWrapper> entry = entries.next();
-	      try {
-		entry.getValue().publish();
-	      } catch (Exception ex) {
-		logger.error(tag + " unable to republish unconfirmed message: " 
-			     + entry.getKey());
-	      }
-	      entries.remove();
-	    }
-	  } else {
-	    try {
-	      unconfirmedMap.remove(seqNo).publish();
-	    } catch (Exception ex) {
-	      logger.error(tag + " unable to republish unconfirmed message: " 
-			   + seqNo);
-	    }
-	  }
-	}
+        public void handleNack(long seqNo, boolean multiple) {
+          if (multiple) {
+            Iterator<Map.Entry<Long, PublishWrapper>> entries = unconfirmedMap
+              .headMap(seqNo+1).entrySet().iterator();
+            while (entries.hasNext()) {
+              Map.Entry<Long, PublishWrapper> entry = entries.next();
+              try {
+                entry.getValue().publish();
+              } catch (Exception ex) {
+                logger.error(tag + " unable to republish unconfirmed message: " 
+                             + entry.getKey());
+              }
+              entries.remove();
+            }
+          } else {
+            try {
+              unconfirmedMap.remove(seqNo).publish();
+            } catch (Exception ex) {
+              logger.error(tag + " unable to republish unconfirmed message: " 
+                           + seqNo);
+            }
+          }
+        }
       });
     getChannel().confirmSelect();
   }
@@ -108,9 +108,9 @@ public final class HaPublisher extends ReconnectingPublisher {
 
   @Override
   public synchronized void publish(String exch, String routingKey, 
-				   boolean mandatory, boolean immediate, 
-				   AMQP.BasicProperties props, 
-				   byte[] bytes) throws IOException {
+                                   boolean mandatory, boolean immediate, 
+                                   AMQP.BasicProperties props, 
+                                   byte[] bytes) throws IOException {
     // if (props == null) {
     //   props = MessageProperties.PERSISTENT_BASIC;
     // }
@@ -132,8 +132,8 @@ public final class HaPublisher extends ReconnectingPublisher {
     private final byte[] bytes;
 
     PublishWrapper(String exch, String routingKey, boolean mandatory, 
-		   boolean immediate, AMQP.BasicProperties props, 
-		   byte[] bytes) {
+                   boolean immediate, AMQP.BasicProperties props, 
+                   byte[] bytes) {
       this.exch = exch; 
       this.routingKey = routingKey; 
       this.mandatory = mandatory; 
@@ -144,15 +144,15 @@ public final class HaPublisher extends ReconnectingPublisher {
     
     void publish() throws IOException {
       HaPublisher.super
-	.publish(exch, routingKey, mandatory, immediate, props, bytes);
+        .publish(exch, routingKey, mandatory, immediate, props, bytes);
     }
     
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
-	.add("exchange", exch).add("routing-key", routingKey)
-	.add("mandatory", mandatory).add("immediate", immediate)
-	.add("props", props).toString();
+      return MoreObjects.toStringHelper(this)
+        .add("exchange", exch).add("routing-key", routingKey)
+        .add("mandatory", mandatory).add("immediate", immediate)
+        .add("props", props).toString();
     }
   }
 }
